@@ -1,0 +1,1064 @@
+---
+title: "Final Project Code"
+author: "Kelsey Matsik"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data Cleaning
+
+```{r}
+library(dplyr)
+
+d1 <- read.csv("~/Desktop/STAT 3280/Project/Data/student-mat.csv", header=TRUE)
+d2 <- read.csv("~/Desktop/STAT 3280/Project/Data/student-por.csv", header=TRUE)
+
+print(colnames(d1))
+print(colnames(d2))
+
+# View dimensions of the dataframe 
+print(dim(d1))
+print(dim(d2))
+
+# Combine d1 and d2
+combined_df <- rbind(d1, d2)
+
+# Check for duplicate rows 
+duplicate_rows <- combined_df[duplicated(combined_df),]
+duplicate_rows # No duplicates 
+
+# Rename columns to be more intuitive 
+df <- combined_df 
+
+df <- df %>% rename(address.type = address, 
+                    divorced = Pstatus, 
+                    mom.edu = Medu, 
+                    dad.edu = Fedu, 
+                    mom.occ = Mjob, 
+                    dad.occ = Fjob, 
+                    higher.edu = higher, 
+                    home.internet = internet, 
+                    weekday.alc = Dalc, 
+                    weekend.alc = Walc, 
+                    health.status = health,
+                    final.grade = G3, 
+                    first.period.grade = G1, 
+                    second.period.grade = G2
+                    )
+
+df1 <- df 
+
+# Replacing variable values with original values
+df1$famsize[df1$famsize == "LE3"] <- "less than or equal to 3"
+df1$famsize[df1$famsize == "GT3"] <- "greater than 3"
+
+df1$divorced[df1$divorced == "T"] <- 0
+df1$divorced[df1$divorced == "A"] <- 1
+
+df1$mom.edu[df1$mom.edu == 0] <- "no education"
+df1$mom.edu[df1$mom.edu == 1] <- "elementary school"
+df1$mom.edu[df1$mom.edu == 2] <- "middle school"
+df1$mom.edu[df1$mom.edu == 3] <- "high school"
+df1$mom.edu[df1$mom.edu == 4] <- "university or higher"
+
+df1$dad.edu[df1$dad.edu == 0] <- "no education"
+df1$dad.edu[df1$dad.edu == 1] <- "elementary school"
+df1$dad.edu[df1$dad.edu == 2] <- "middle school"
+df1$dad.edu[df1$dad.edu == 3] <- "high school"
+df1$dad.edu[df1$dad.edu == 4] <- "university or higher"
+
+# Changing 'yes/no' values to binary 1/0 values 
+df1 <- df1 %>%
+  mutate(across(c(schoolsup, famsup, paid, activities, nursery, higher.edu, 
+                  home.internet, romantic), ~ ifelse(. == 'yes', 1, 0)))
+
+
+# Transforming final.grade scale to 0-100 to be more comparable to real scenarios
+df1 <- df1 %>% mutate(final.grade = final.grade * 5) # Values range from 0 to 20, so just multiply each one by 5
+df1 <- df1 %>% mutate(first.period.grade = first.period.grade * 5)
+df1 <- df1 %>% mutate(second.period.grade = second.period.grade *5)
+
+# Making one drinking column 
+df1$drinking1 <- df1$weekday.alc * 5 # Assigning weights for number of days in week and weekend
+df1$drinking2 <- df1$weekend.alc * 2 
+
+df1 <- df1 %>% mutate(drinking = rowMeans(select(., c("weekday.alc", "weekend.alc"))))
+
+write.csv(df1, "~/Desktop/STAT 3280/Project/cleaned_data.csv", row.names=FALSE)
+```
+
+# Visualizations 
+
+```{r}
+df <- read.csv("~/Desktop/STAT 3280/Project/cleaned_data.csv")
+```
+
+```{r}
+library(ggplot2)
+library(viridis)
+library(dplyr)
+library(plotly)
+library(knitr)
+```
+
+
+## Plot 1 
+
+```{r}
+library(ggpubr)
+
+p9a <- ggplot(df, aes(x = age, y = drinking, color = drinking)) +
+  geom_point(position = "jitter") + 
+  scale_color_viridis(option = "plasma") + 
+  theme_minimal() +
+  geom_smooth(method = "lm", color = "black") +
+  stat_cor(method = "pearson", r.accuracy = 0.01, p.accuracy = 0.001, label.x.npc = 0.8) + 
+  # facet_grid(.~sex, labeller = as_labeller(c("F" = "Female", "M" = "Male"))) + 
+  labs(title = "Age vs. Alcohol Consumption", 
+       x = "Age", y = "Alcohol Consumption Level") + 
+  scale_y_continuous(breaks = 1:5, labels = c("Very low", "Low", "Moderate", "High", "Very high")) + 
+  theme(axis.text.y = element_text(), 
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 14), 
+        strip.text = element_text(size = 14),
+        plot.title = element_text(size = 18, hjust = 0.5)) + 
+  guides(color = FALSE)
+
+p9a
+```
+
+## Plot 2 
+
+```{r}
+library(ggpubr)
+
+p9 <- ggplot(df, aes(x = age, y = drinking, color = drinking)) +
+  geom_point(position = "jitter") + 
+  scale_color_viridis(option = "plasma") + 
+  theme_minimal() +
+  geom_smooth(method = "lm", color = "black") +
+  stat_cor(method = "pearson", r.accuracy = 0.01, p.accuracy = 0.001, label.x.npc = 0.5) + 
+  facet_grid(.~sex, labeller = as_labeller(c("F" = "Female", "M" = "Male"))) + 
+  labs(title = "Age vs. Alcohol Consumption", 
+       x = "Age", y = "Alcohol Consumption Level") + 
+  scale_y_continuous(breaks = 1:5, labels = c("Very low", "Low", "Moderate", "High", "Very high")) + 
+  theme(axis.text.y = element_text(), 
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 14), 
+        strip.text = element_text(size = 14),
+        plot.title = element_text(size = 18, hjust = 0.5)) + 
+  guides(color = FALSE)
+
+p9
+```
+
+## Plot 3 
+```{r}
+
+library(shiny)
+library(ggplot2)
+library(viridis)
+
+colors <- c("gold2", "orange2", "darkorange", "salmon3", 
+            "orchid4", "purple3", "blue3", "blue4", "midnightblue")
+
+ui <- fluidPage(
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("binwidth", "Bin Width:", min = 0.5, max = 2, value = 1, step = 0.1),
+      selectInput(inputId = "color",
+                  label = "Fill Color",
+                  choices = colors,
+                  selected = "blue4"),  
+      checkboxInput("facet_gender", "Group by Sex", value=FALSE) # Facet by gender
+    ),
+    mainPanel(
+      plotOutput("plot", height="600px"), 
+      uiOutput("annotation") # Output annotation when plot renders
+    )
+  )
+)
+
+server <- function(input, output) {
+  df <- read.csv("cleaned_data.csv") 
+  
+  output$plot <- renderPlot({
+    p <- ggplot(df, aes(x=drinking, y=health.status)) + 
+      stat_bin_2d(binwidth = input$binwidth, color = "black") + # Change the bin width
+      scale_fill_gradient(low = "white", high = input$color) +
+      theme_minimal() + 
+      labs(title = "Alcohol Consumption vs. Health Status", 
+           x = "Alcohol Consumption Level", y = "Health Status", fill = "Count") + 
+      scale_x_continuous(breaks = 1:5, labels = 
+                           c("Very low", "Low", "Moderate", "High", "Very high")) +
+      scale_y_continuous(breaks = 1:5, labels = 
+                           c("Very poor", "Poor", "Moderate", "Good", "Very good")) +  
+      theme(plot.title = element_text(hjust = 0.5, size=22), 
+            axis.title = element_text(size = 22),
+            axis.text.x = element_text(size = 14, angle = 45, vjust = 0.6),
+            axis.text.y = element_text(size = 14), 
+            plot.margin = margin(100, 100, 0, 100)) # Create margin where annotation will go
+  
+    if (input$facet_gender) { # Facet by gender 
+      p <- p + facet_grid(. ~ sex, labeller = labeller(sex=c("F"="Female", "M"="Male"))) + 
+        theme(strip.text = element_text(size = 20))
+    }
+  
+    p
+  })
+
+
+output$annotation <- renderUI({ 
+  tagList(
+    div(style = "text-align: center; margin-top: -575px; margin-bottom: 20px; font-size: 14px;", 
+        "This app visualizes the relationship between high school students' 
+        drinking habits and health status. View all the students together, or 
+        group by gender!")
+   )
+ })
+}
+
+# Run the Shiny app
+shinyApp(ui = ui, server = server)
+
+```
+
+## Plot 4
+
+```{r}
+library(shiny)
+library(ggplot2)
+library(ggridges)
+library(viridis)
+
+# Define UI
+ui <- fluidPage(
+  # titlePanel("Weekday vs. Weekend Alcohol Consumption"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("variable", "View weekend alcohol consumption instead:",
+                  choices = c("Weekday Alcohol Consumption" = "weekday.alc",
+                              "Weekend Alcohol Consumption" = "weekend.alc"),
+                  selected = "weekday.alc")
+    ),
+    mainPanel(
+      plotOutput("density_plot")
+    )
+  )
+)
+
+# Define server logic
+server <- function(input, output) {
+  
+  df <- read.csv("cleaned_data.csv") 
+  
+  output$density_plot <- renderPlot({
+    # Check which variable is selected
+    variable <- switch(input$variable,
+                       "weekday.alc" = "Weekday Alcohol Consumption",
+                       "weekend.alc" = "Weekend Alcohol Consumption")
+    
+    # Create the plot
+    ggplot(df, aes(x = final.grade, y = factor(.data[[input$variable]]), 
+                   fill = factor(.data[[input$variable]]))) + 
+      geom_density_ridges() + 
+      scale_fill_viridis_d(5, option = "plasma") +
+      theme_minimal() + 
+      scale_y_discrete(breaks = 1:5, labels = c("Very low", "Low", "Moderate", 
+                                                "High", "Very high")) +
+      labs(y = "Alcohol Consumption Level", x = "Final Grade", title =
+           paste("Effect of", variable, "on Final Grade")) + 
+      theme(legend.position = "none", 
+            plot.title = element_text(hjust=0.5, size=22), 
+            axis.title = element_text(size=20), 
+            axis.text.x = element_text(size=16), 
+            axis.text.y = element_text(size=16))  +
+      scale_x_continuous(breaks = seq(0, 100, by = 10)) 
+  })
+}
+
+# Run the application
+shinyApp(ui = ui, server = server)
+```
+
+
+## Plot 5 
+
+```{r}
+
+study.df <- df %>%
+  mutate(studytime = case_when(
+    studytime == 1 ~ "<2 hours",
+    studytime == 2 ~ "2-5 hours",
+    studytime == 3 ~ "5-10 hours",
+    studytime == 4 ~ ">10 hours",
+    TRUE ~ as.character(studytime)
+  ))
+
+study.df$studytime <- factor(study.df$studytime, labels = c("<2 hours", 
+                                                            "2-5 hours", 
+                                                            "5-10 hours", 
+                                                            ">10 hours"))
+
+p2colors <- viridisLite::viridis(4, option = "plasma")
+
+p2 <- plot_ly(study.df, x = ~absences, y = ~final.grade, color = ~studytime, colors = p2colors,
+               text = ~paste(studytime, "spent studying per week"), 
+               hoverinfo = "text", type="scatter", mode="markers", 
+              marker = list(opacity = 0.7, size=8)) %>% 
+  layout(title = list(text = "Total Absences vs. Final Grade", size = 20), 
+         xaxis = list(title = "Absences", titlefont = list(size = 16), tickfont = list(size = 14)),
+         yaxis = list(title = "Final Grade", titlefont = list(size = 16), tickfont = list(size = 14)),
+         showlegend = TRUE, 
+         legend = list(title = list(text = "Study Time per Week"))) 
+
+p2
+```
+
+
+## Plot 6
+
+```{r}
+library(tidyverse)
+
+# Pre-processing 
+
+grades_df <- df %>% select(first.period.grade, second.period.grade, final.grade, health.status)
+grades_df <- gather(grades_df, period, grade, 1:3)
+grades_df$Period <- grades_df$period
+grades_df$Period <- factor(grades_df$Period, levels = c("first.period.grade", 
+                                                        "second.period.grade", "final.grade"))
+
+grades_df <- grades_df %>%
+  mutate(Period = case_when(
+    Period == "first.period.grade" ~ "1st Semester",
+    Period == "second.period.grade" ~ "2nd Semester",
+    Period == "final.grade" ~ "Final",
+    TRUE ~ as.character(Period)
+  ))
+
+grades_df <- grades_df %>%
+  mutate(health.status = case_when(
+    health.status == 1 ~ "Very Good",
+    health.status == 2 ~ "Good",
+    health.status == 3 ~ "Moderate",
+    health.status == 4 ~ "Poor",
+    health.status == 5 ~ "Very Poor",
+    TRUE ~ as.character(health.status)
+  ))
+
+grades_df$health.status <- factor(grades_df$health.status, levels = c("Very Good", 
+                                        "Good", "Moderate", "Poor", "Very Poor"))
+```
+
+```{r fig.align = 'center'}
+p5colors <- c("blue4", "blue4", "grey", "grey", "grey")
+
+p5 <- plot_ly(grades_df, x = ~factor(health.status), y = ~grade, type = "violin", frame = ~Period,
+             color = ~factor(health.status), colors = p5colors) %>% 
+  layout(
+    title = list(text = "Grade Distribution by Student's Health Condition over Semester", size = 20),
+            xaxis = list(title = "Health Status", titlefont = list(size = 16), 
+                         tickfont = list(size = 14)),
+            yaxis = list(title = "Grade", range = c(0, 100), 
+                         titlefont = list(size = 16), 
+                         tickfont = list(size = 14), dtick = 10),
+            boxmode = "group", 
+            showlegend = FALSE) %>%
+  animation_opts(frame = 1000,  # Controls speed of transition; higher number = slower
+                 redraw = TRUE, # Redraws the plot in each frame
+                 easing = "linear") %>% # FIX THIS PART
+  
+  layout(
+   updatemenus = list( 
+     list(
+       type = "buttons", 
+       showactive = FALSE,
+       x = 0, 
+       y = -0.05, 
+       buttons = list(
+         
+        list(
+           label = "Pause", # Name of the label
+           method = "animate", # What do to when the button is clicked
+           args = list(NULL, list(frame = list(duration = 0,  # Stops immediately
+                                               redraw = TRUE), 
+                                  mode = "immediate"))
+         )
+       )
+     )
+   )
+ ) 
+    
+
+p5
+```
+
+
+## Plot 7
+
+```{r}
+p7 <- ggplot(df, aes(x=factor(freetime), y=final.grade)) + 
+  geom_boxplot(aes(fill=factor(freetime))) + 
+  theme_minimal() + 
+  scale_fill_viridis_d(option = "plasma") +
+  facet_grid(.~activities, 
+             labeller = as_labeller(c("0" = "No Extracurriculars", "1" = "Extracurriculars"))) + 
+  guides(fill = FALSE) + 
+  labs(title = "Final Grade Distribution by How Freetime is Spent", 
+       x = "Amount of Freetime after School", y = "Final Grade") + 
+  scale_x_discrete(breaks = 1:5, labels = c("A lot less", "Less", "Some", "More", "A lot more")) + 
+  theme(axis.text.x = element_text(angle = 35), 
+        plot.title = element_text(hjust = 0.5, size = 18), 
+        axis.title = element_text(size = 14),
+        strip.text = element_text(size = 14), 
+        axis.text = element_text(size = 10))
+
+
+p7
+```
+
+
+## Plot 8
+
+```{r}
+library(shiny)
+library(ggplot2)
+library(viridis)
+library(dplyr)
+
+# Define UI
+ui <- fluidPage(
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("variable", "View by father's education level instead:",
+                  choices = c("Mother's Education Level" = "mom.edu",
+                              "Father's Education Level" = "dad.edu"),
+                  selected = "mom.edu")
+    ),
+    mainPanel(
+      plotOutput("barPlot")
+    )
+  )
+)
+
+
+# Define server logic
+server <- function(input, output) {
+  
+  df <- read.csv("cleaned_data.csv") # Load and prep data 
+  
+  edu_df <- df %>%
+    mutate(higher.edu = case_when(
+      higher.edu == 0 ~ "No", 
+      higher.edu == 1 ~ "Yes", 
+      TRUE ~ as.character(higher.edu)
+    ))
+  
+  edu_df <- edu_df %>%
+    mutate(mom.edu = case_when(
+      mom.edu == "no education" ~ "No education", 
+      mom.edu == "elementary school" ~ "Elementary school",
+      mom.edu == "middle school" ~ "Middle school",
+      mom.edu == "high school" ~ "High school", 
+      mom.edu == "university or higher" ~ "University or higher", 
+      TRUE ~ as.character(mom.edu)
+    ))
+  
+  edu_df <- edu_df %>%
+    mutate(dad.edu = case_when(
+      dad.edu == "no education" ~ "No education", 
+      dad.edu == "elementary school" ~ "Elementary school",
+      dad.edu == "middle school" ~ "Middle school",
+      dad.edu == "high school" ~ "High school", 
+      dad.edu == "university or higher" ~ "University or higher", 
+      TRUE ~ as.character(dad.edu)
+    ))
+  
+  edu_df$mom.edu <- factor(edu_df$mom.edu, levels = c("No education", 
+                                                      "Elementary school", 
+                                                      "Middle school", 
+                                                      "High school", 
+                                                      "University or higher"))
+  edu_df$dad.edu <- factor(edu_df$dad.edu, levels = c("No education", 
+                                                      "Elementary school", 
+                                                      "Middle school", 
+                                                      "High school", 
+                                                      "University or higher"))
+  
+  
+  output$barPlot <- renderPlot({
+    
+    # Check which variable is selected
+    variable <- switch(input$variable,
+                       "mom.edu" = "Mother's Education Level",
+                       "dad.edu" = "Father's Education Level")
+    
+    # Create the plot
+    ggplot(edu_df, aes(y=.data[[input$variable]], fill=factor(higher.edu))) + 
+      geom_bar(position = "dodge") + 
+      geom_text(stat = "count", aes(label = after_stat(count)), 
+                position = position_dodge(width = 0.9), vjust = 0.6, 
+                hjust = -0.3, size = 5) + 
+      theme_minimal() + 
+      labs(title = paste("Interest in Attending College by", variable), 
+           x = "Count", y = variable, fill = "College") + 
+      theme(plot.title = element_text(hjust = 0.5, size = 22), 
+            axis.title = element_text(size = 20), 
+            axis.text = element_text(size = 16), 
+            # axis.text.x = element_blank(),
+            legend.title = element_text(size = 16), 
+            legend.text = element_text(size = 14)) + 
+      scale_fill_manual(values = c("grey", "#0D0887FF")) 
+      # guides(fill = FALSE)
+  })
+}
+
+
+# Run the application
+shinyApp(ui = ui, server = server)
+```
+
+
+## Plot 9
+
+```{r}
+library(ggalluvial)
+
+alluv_df <- df %>% 
+  group_by(romantic, famrel, health.status) %>% 
+  summarize(freq = n())
+
+alluv_df$romantic <- factor(alluv_df$romantic, labels = c("No", "Yes"))
+alluv_df$famrel <- factor(alluv_df$famrel, labels = c("Very poor", "Poor", 
+                                                      "Decent", "Good", "Very Good"))
+```
+
+
+```{r, fig.width = 8, fig.align = 'center'}
+p8 <- ggplot(alluv_df, 
+       aes(y = freq, axis2 = factor(romantic), axis1 = factor(famrel))) + 
+         geom_alluvium(aes(fill = factor(famrel)), width = 0, knot.pos = 1/4, reverse = FALSE) + 
+  guides(fill = "none") +
+  geom_stratum(width = 1/8, reverse = FALSE) +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum)), reverse = FALSE, size = 3.25) +
+  scale_x_continuous(breaks = 1:2, labels = c("Quality of Family Relationships", "Romantic Partner")) + 
+  labs(title = "Satisfaction with Family and Romantic Relationships", y = "Frequency") + 
+  scale_fill_viridis_d(option = "plasma") +
+  theme_minimal() + 
+  theme(plot.title = element_text(size = 16, hjust = 0.5), 
+        axis.title.y = element_text(size = 14), 
+        axis.text.x = element_text(size = 13), 
+        axis.text.y = element_text(size = 10)) 
+
+p8 
+```
+
+
+# Appendix 
+
+The appendix contains additional plots I made that were not included in my final 
+project. The plots below either served as a rough draft for plots upon which further 
+iterations were made, or they taught me what did *not* work when trying to visualize 
+variables in my data.  
+
+## Additional Plots 
+
+
+```{r}
+library(dplyr)
+library(ggcorrplot)
+library(viridis)
+library(wesanderson)
+library(RColorBrewer)
+library(ggbeeswarm)
+library(patchwork)
+library(ggridges)
+library(plotly)
+```
+
+
+About the dataset: \newline 
+<https://www.kaggle.com/datasets/uciml/student-alcohol-consumption> 
+```{r}
+df <- read.csv("~/Desktop/STAT 3280/Project/cleaned_data.csv")
+colnames(df)
+```
+```{r}
+grades <- df %>% select(first.period.grade, second.period.grade, final.grade)
+head(grades, 20)
+```
+
+
+```{r}
+ggplot(df, aes(x=weekend.alc)) + geom_bar()
+```
+
+```{r}
+ggplot(df, aes(x=weekday.alc)) + geom_bar()
+```
+
+## Exploratory Data Analysis 
+
+```{r}
+# Define numeric variables (not including binary variables)
+num_vars <- df %>% select(age, traveltime, studytime, failures, famrel, 
+                          freetime, goout, weekday.alc, weekend.alc, 
+                          health.status, absences, final.grade, drinking)
+```
+
+Correlation Matrix (Numeric Variables)
+```{r}
+cor_matrix <- cor(num_vars)
+cor_df <- as.data.frame(cor_matrix)
+
+p1 <- ggcorrplot(cor_df, type = "lower", lab = TRUE) + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + 
+  labs(x = "Variable 1", y = "Variable 2", title = "Correlation between Numeric Variables", fill = "Correlation") + theme(plot.title = element_text(hjust=0.5))
+
+p1_color_scale <- scale_fill_gradient2(low = "red", mid = "white", high = "green3", midpoint = 0, limits = c(-1, 1), na.value = "white")
+
+p1 <- p1 + p1_color_scale
+
+p1
+```
+Source: <http://www.sthda.com/english/wiki/ggcorrplot-visualization-of-a-correlation-matrix-using-ggplot2>
+
+```{r}
+p2 <- ggplot(df, aes(x=factor(drinking), y=final.grade, fill=factor(drinking))) + geom_boxplot() + theme_minimal() + labs(title="Drinking Habits vs. Final Grade") +
+scale_fill_manual(values=wes_palette("Darjeeling1", n=10, type="continuous"))
+p2
+```
+
+```{r}
+p3 <- ggplot(df,aes(x=factor(drinking), y=final.grade, fill=factor(drinking))) + 
+  geom_violin() +
+scale_fill_manual(values=wes_palette("Darjeeling1", n=10, type="continuous")) + 
+  labs(title="Drinking Habits vs. Final Grade")
+p3
+```
+
+```{r}
+p4 <- ggplot(df, aes(x=final.grade, fill=mom.edu)) + 
+  geom_density(alpha=0.5) + 
+  scale_fill_manual(values=wes_palette("Darjeeling1", n=10, type="continuous")) + 
+  theme_minimal() + 
+  labs(title="Final Grade Distribution grouped by Mother's Education")
+
+p4
+```
+
+```{r}
+p5 <- ggplot(df, aes(x=final.grade, fill=dad.edu)) + 
+  geom_density(alpha=0.5) + 
+  scale_fill_manual(values=wes_palette("Darjeeling1", n=10, type="continuous")) + 
+  theme_minimal() + 
+  labs(title="Final Grade Distribution grouped by Fathers's Education")
+
+p5
+```
+
+```{r}
+p6 <- p4 + p5
+p6
+```
+
+```{r}
+p7 <- ggplot(df, aes(x=divorced, y=final.grade, fill=factor(divorced))) + geom_boxplot()
+p7
+```
+
+
+```{r}
+p8 <- ggplot(df, aes(x=schoolsup, y=final.grade, fill=factor(divorced))) + geom_boxplot()
+p8
+```
+
+```{r}
+p9 <- ggplot(df, aes(x=studytime, y=final.grade, fill=factor(studytime))) + geom_boxplot()
+p9
+```
+
+```{r}
+head(df)
+```
+
+```{r}
+library(dplyr)
+
+study.df <- df %>%
+  mutate(studytime = case_when(
+    studytime == 1 ~ "<2",
+    studytime == 2 ~ "2-5",
+    studytime == 3 ~ "5-10",
+    studytime == 4 ~ ">10",
+    TRUE ~ as.character(studytime)
+  ))
+```
+
+
+```{r}
+head(study.df)
+```
+
+```{r}
+p10colors <- viridisLite::viridis(4)
+
+p10colors
+show_col(p10colors)
+
+p10colors_r <- c("#FDE725FF", "#35B779FF", "#31688EFF", "#440154FF")
+
+```
+
+
+```{r}
+library(plotly)
+
+p10 <- plot_ly(study.df, x = ~absences, y = ~final.grade, color = ~studytime, colors = p10colors_r,
+               text = ~paste(studytime, "hours spent studying per week"), 
+               hoverinfo = "text", type="scatter", mode="markers", marker = list(opacity = 0.7, size=8)) %>% 
+  layout(title = "Total Absences vs. Final Grade", 
+         xaxis = list(title = "Absences"), 
+         yaxis = list(title = "Final Grade"), 
+         showlegend = FALSE)
+
+p10
+```
+
+
+```{r}
+ggplot(df, aes(x = final.grade, y = factor(weekday.alc), fill = factor(weekday.alc))) + 
+  geom_density_ridges() + 
+  scale_fill_viridis_d(5) +
+  theme_minimal() + 
+  theme(legend.position = "none")
+  scale_y_discrete(breaks = 1:5, labels = c("very low", "low", "moderate", "high", "very high")) 
+```
+
+```{r}
+dim(df)
+```
+
+# Plot 11
+```{r}
+library(tidyr)
+```
+
+
+
+### Plot 11b
+
+```{r}
+grades_df <- df %>% select(first.period.grade, second.period.grade, final.grade, health.status)
+grades_df <- gather(grades_df, period, grade, 1:3)
+grades_df$Period <- grades_df$period
+grades_df$Period <- factor(grades_df$Period, levels = c("first.period.grade", "second.period.grade", "final.grade"))
+
+grades_df <- grades_df %>%
+  mutate(Period = case_when(
+    Period == "first.period.grade" ~ "1st Semester",
+    Period == "second.period.grade" ~ "2nd Semester",
+    Period == "final.grade" ~ "Final",
+    TRUE ~ as.character(Period)
+  ))
+
+grades_df <- grades_df %>%
+  mutate(health.status = case_when(
+    health.status == 1 ~ "Very Good",
+    health.status == 2 ~ "Good",
+    health.status == 3 ~ "Moderate",
+    health.status == 4 ~ "Poor",
+    health.status == 5 ~ "Very Poor",
+    TRUE ~ as.character(health.status)
+  ))
+
+grades_df$health.status <- factor(grades_df$health.status, levels = c("Very Good", "Good", "Moderate", "Poor", "Very Poor"))
+
+head(grades_df)
+```
+
+
+```{r}
+p11colors <- c("#2D708EFF", "#2D708EFF", "grey", "grey", "grey")
+```
+
+
+```{r}
+p11 <- plot_ly(grades_df, x = ~factor(health.status), y = ~grade, type = "violin", frame = ~Period,
+             color = ~factor(health.status), colors = p11colors) %>% 
+  layout(title = list(text = "Grade Distribution by Student's Health Condition over Semester", size = 20),
+            xaxis = list(title = "Health Status", titlefont = list(size = 16), tickfont = list(size = 14)),
+            yaxis = list(title = "Grade", range = c(0, 100), titlefont = list(size = 16), tickfont = list(size = 14), dtick = 10),
+            boxmode = "group", 
+            showlegend = FALSE) %>%
+  animation_opts(frame = 1000,  # Controls speed of transition; higher number = slower
+                 redraw = TRUE, # Redraws the plot in each frame
+                 easing = "linear") %>% # FIX THIS PART
+  
+  layout(
+   updatemenus = list( 
+     list(
+       type = "buttons", 
+       showactive = FALSE,
+       x = 0, 
+       y = 1, 
+       buttons = list(
+         
+        list(
+           label = "Pause", # Name of the label
+           method = "animate", # What do to when the button is clicked
+           args = list(NULL, list(frame = list(duration = 0,  # Stops immediately
+                                               redraw = TRUE), 
+                                  mode = "immediate"))
+         )
+       )
+     )
+   )
+ ) 
+    
+
+p11
+```
+
+# Plot 12
+```{r}
+p12colors <- viridisLite::viridis(12)
+show_col(p12colors)
+p12colors
+
+# p12colors <- c("#C2DF23FF", "#482173FF")
+```
+```{r}
+edu_df <- df %>%
+  mutate(higher.edu = case_when(
+    higher.edu == 0 ~ "No", 
+    higher.edu == 1 ~ "Yes", 
+    TRUE ~ as.character(higher.edu)
+  ))
+
+edu_df <- edu_df %>%
+  mutate(mom.edu = case_when(
+    mom.edu == "no education" ~ "No education", 
+    mom.edu == "elementary school" ~ "Elementary school",
+    mom.edu == "middle school" ~ "Middle school",
+    mom.edu == "high school" ~ "High school", 
+    mom.edu == "university or higher" ~ "University or higher", 
+    TRUE ~ as.character(mom.edu)
+  ))
+
+edu_df <- edu_df %>%
+  mutate(dad.edu = case_when(
+    dad.edu == "no education" ~ "No education", 
+    dad.edu == "elementary school" ~ "Elementary school",
+    dad.edu == "middle school" ~ "Middle school",
+    dad.edu == "high school" ~ "High school", 
+    dad.edu == "university or higher" ~ "University or higher", 
+    TRUE ~ as.character(dad.edu)
+  ))
+
+edu_df$mom.edu <- factor(edu_df$mom.edu, levels = c("No education", "Elementary school", "Middle school", "High school", "University or higher"))
+
+edu_df$dad.edu <- factor(edu_df$dad.edu, levels = c("No education", "Elementary school", "Middle school", "High school", "University or higher"))
+
+# edu_df$higher.edu <- factor(edu_df$higher.edu, levels = c("Yes", "No"))
+
+head(edu_df)
+```
+
+```{r}
+table(df$mom.edu)
+```
+
+
+```{r}
+ggplot(edu_df, aes(y=mom.edu, fill=factor(higher.edu))) + geom_bar() + theme_minimal() + labs(title = " Students Interested in Higher Education by Mother's Education Level", x = "Count", y = "Mother's Highest Education Level") + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_manual(values = c("grey", "#2D708EFF"))
+```
+
+# Plot 13
+
+```{r}
+strip_df <- df
+strip_df$activities <- as.factor(strip_df$activities)
+```
+
+
+```{r}
+stripchart(final.grade~activities, 
+           data = strip_df, 
+           main = "Final Grade vs. Activities", 
+           # xlab = "Final Grade", 
+           # ylab = "Activities", 
+           method = "jitter", 
+           col = c("yellow", "blue"),
+           group.names = c("Yes", "No"),
+           pch = 1) # default 
+```
+
+
+# Plot 14 
+```{r}
+ggplot(df, aes(x=factor(freetime), y=final.grade)) + 
+  geom_boxplot(aes(fill=factor(freetime))) + 
+  theme_minimal() + 
+  scale_fill_viridis_d() +
+  facet_grid(.~activities, labeller = as_labeller(c("0" = "No Extracurriculars", "1" = "Extracurriculars"))) + 
+  guides(fill = FALSE) + 
+  labs(title = "Final Grade Distribution by How Freetime is Spent", x = "Amount of Freetime after School", y = "Final Grade") + 
+  scale_x_discrete(breaks = 1:5, labels = c("Very less", "Less", "Some", "More", "A lot more")) + 
+  theme(axis.text.x = element_text(angle = 35), 
+        plot.title = element_text(hjust = 0.5, size = 18), 
+        axis.title = element_text(size = 14),
+        strip.text = element_text(size = 14), 
+        axis.text = element_text(size = 10))
+```
+
+# Plot 15
+
+```{r}
+library(ggalluvial)
+```
+
+```{r}
+alluv_df <- df %>% 
+  group_by(romantic, famrel, health.status) %>% 
+  summarize(freq = n())
+
+alluv_df
+```
+
+```{r}
+ggplot(alluv_df, 
+       aes(y = freq, axis1 = factor(romantic), axis2 = factor(famrel), axis3 = factor(health.status))) + geom_alluvium(aes(fill = factor(health.status)), width = 0, knot.pos = 1/4, reverse = FALSE) + 
+  guides(fill = "none") +
+  geom_stratum(width = 1/8, reverse = FALSE) +
+  geom_text(stat = "stratum", aes(label= after_stat(stratum)), reverse = FALSE) +
+  scale_x_continuous(breaks = 1:3, labels = c("Romantic Partner", "Family Relationship Status", "Health Condition"))
+
+```
+
+```{r}
+alluv_df$romantic <- factor(alluv_df$romantic, labels = c("No", "Yes"))
+alluv_df$famrel <- factor(alluv_df$famrel, labels = c("Very poor", "Poor", "Decent", "Good", "Very Good"))
+```
+
+
+```{r}
+ggplot(alluv_df, 
+       aes(y = freq, axis2 = factor(romantic), axis1 = factor(famrel))) + 
+         geom_alluvium(aes(fill = factor(famrel))) + 
+  guides(fill = "none") +
+  geom_stratum(width = 1/8, reverse = FALSE) +
+  geom_text(stat = "stratum", aes(label= after_stat(stratum)), reverse = FALSE) +
+  scale_x_continuous(breaks = 1:2, labels = c("Quality of Family Relationships", "Romantic Partner")) + 
+  labs(title = "Satisfaction with Family Relationships by Romantic Relationships", y = "Frequency") + 
+  scale_fill_viridis_d() +
+  theme_minimal() + 
+  theme(plot.title = element_text(size = 18, hjust = 0.5), 
+        axis.title.y = element_text(size = 16), 
+        axis.text.x = element_text(size = 14), 
+        axis.text.y = element_text(size = 12))
+```
+
+# Plot 16 
+
+```{r}
+F_df <- df[df$sex == "F", ] 
+F_cor <- cor(F_df$drinking, F_df$age)
+
+M_df <- df[df$sex == "M", ] 
+M_cor <- cor(M_df$drinking, M_df$age)
+```
+
+```{r}
+corr <- bquote(R^2)
+print(corr)
+```
+
+
+```{r}
+p16_F <- ggplot(F_df, aes(x = age, y = drinking, color = drinking)) + 
+  geom_point(position = "jitter") +
+  geom_smooth(method = "lm", color = "darkgrey") +
+  scale_color_viridis() + 
+  theme_minimal() + 
+  geom_text(aes(x = max(F_df$age), y = max(F_df$drinking), label = paste("Corr:", round(F_cor, 3))), 
+            hjust = 1, vjust = 1.5, size = 4, color = "black") 
+```
+```{r}
+p16 <- ggplot(M_df, aes(x = age, y = drinking, color = drinking)) + 
+  geom_point(position = "jitter") +
+  geom_smooth(method = "lm", color = "darkgrey") +
+  scale_color_viridis() + 
+  theme_minimal() + 
+  geom_text(aes(x = max(M_df$age), y = max(M_df$drinking), label = paste("Corr:", round(M_cor), 3)), hjust = 1, vjust = 1.5, size = 4, color = "black")
+
+p16
+```
+```{r}
+library(ggpubr)
+```
+
+```{r}
+ggplot(df, aes(x = age, y = drinking, color = drinking)) +
+  geom_point(position = "jitter") + 
+  scale_color_viridis() + 
+  theme_minimal() +
+  geom_smooth(method = "lm", color = "black") +
+  stat_cor(method = "pearson", r.accuracy = 0.01, p.accuracy = 0.001, label.x.npc = 0.5) + 
+  facet_grid(.~sex)
+```
+
+
+# What are some factors associated with students' health and academic success? 
+
+### Plot 1: Relationships between Numeric Variables 
+
+Plot 1 is a correlogram containing the correlation coefficients between 
+all the numeric variables in the data. The plot serves as a high-level starting point 
+for understanding the data. Aside from obvious cases of high correlation 
+between variables where multicollinearity is present (such as weekend alcohol 
+consumption and overall drinking habits), the correlogram reveals relationships 
+between several variables that may be interesting to explore. \newline 
+Some of the relationships of interest were final grade and alcohol consumption ($r = -0.13$), 
+final grade and total absences ($r = -0.05$), and hours spent studying per week 
+and final grade ($r = 0.16$). The correlogram provides a good starting point for 
+examining which factors influence high school students' health and academic success,
+but it is limiting for visualizing relationships between variables because it 
+doesn't capture categorical variables or outliers.
+
+
+```{r echo = FALSE}
+library(ggcorrplot)
+
+num_vars <- df %>% select(age, traveltime, studytime, failures, famrel, 
+                          freetime, goout, weekday.alc, weekend.alc, 
+                          health.status, absences, final.grade, drinking)
+
+cor_matrix <- cor(num_vars)
+cor_df <- as.data.frame(cor_matrix)
+
+p1 <- ggcorrplot(cor_df, type = "lower", lab = TRUE, lab_size = 3) + 
+  theme_minimal() + 
+  # theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + 
+  labs(x = "", y = "", title = "Correlation between Numeric Variables", fill = "Correlation") + 
+  theme(plot.title = element_text(size = 20, hjust = 0.5), 
+        axis.text = element_text(size = 14), 
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+p1_color_scale <- scale_fill_gradient2(low = "#FCD225FF", mid = "white", high = "#0D0887FF", midpoint = 0, limits = c(-1, 1), na.value = "white")
+
+p1 <- p1 + p1_color_scale
+
+p1
+```
+
+
+
+
+
