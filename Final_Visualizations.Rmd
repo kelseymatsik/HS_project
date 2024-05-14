@@ -1,0 +1,400 @@
+---
+title: "Visualizing Students' Health and Success"
+subtitle: "Data Visualization Final Project" 
+author: "Kelsey Matsik"
+date: "2024-04-21"
+output: html_document
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+```{r echo = FALSE}
+library(ggplot2)
+library(viridis)
+library(dplyr)
+library(plotly)
+library(knitr)
+```
+
+```{r echo = FALSE}
+df <- read.csv("~/Desktop/STAT 3280/Project/cleaned_data.csv")
+# head(df)
+```
+
+# Introduction 
+
+High school is one of the most transformative periods in a young adult's life. 
+During it, students must learn to balance school work, extracurricular activities, and
+family and intimate relationships. High school is also the period in which most 
+young adults are exposed to alcohol for the first time in their lives. Though alcohol 
+consumption is harmful at any level, drinking can be especially detrimental to 
+teenagers because they are in a vulnerable point in their lives. The below
+visualizations will explore what factors influence a high school student's health 
+and success (achieving good grades), taking a deeper look at how alcohol consumption, 
+family and romantic relationships, health status, final grade, and other social variables 
+are related to each other in the context of high school students' lives. 
+
+These data were collected by the University of Camerino in Camerino, Italy, in 2017. 
+The data were obtained through surveying secondary school (high school) students 
+from two high schools in Italy. 
+
+
+# Understanding Students' Drinking Habits
+
+### Plot 1: Alcohol Consumption by Age 
+
+```{r echo = FALSE, fig.align = 'center'}
+library(ggpubr)
+
+p9a <- ggplot(df, aes(x = age, y = drinking, color = drinking)) +
+  geom_point(position = "jitter") + 
+  scale_color_viridis(option = "plasma") + 
+  theme_minimal() +
+  geom_smooth(method = "lm", color = "black") +
+  stat_cor(method = "pearson", r.accuracy = 0.01, p.accuracy = 0.001, label.x.npc = 0.8) + 
+  # facet_grid(.~sex, labeller = as_labeller(c("F" = "Female", "M" = "Male"))) + 
+  labs(title = "Age vs. Alcohol Consumption", 
+       x = "Age", y = "Alcohol Consumption Level") + 
+  scale_y_continuous(breaks = 1:5, labels = c("Very low", "Low", "Moderate", "High", "Very high")) + 
+  theme(axis.text.y = element_text(), 
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 14), 
+        strip.text = element_text(size = 14),
+        plot.title = element_text(size = 18, hjust = 0.5)) + 
+  guides(color = FALSE)
+
+p9a
+```
+
+In Plot 1, age and alcohol consumption level appear to have a positive relationship 
+with a Pearson correlation coefficient value equal to 0.12. As age increases, the amount 
+of alcohol high school students are drinking increases. This trend is visible as 
+the density of points around very low and low alcohol consumption levels decrease 
+the density of points around moderate and high levels increases as age increases.
+
+
+### Plot 2: Alcohol Consumption by Age and Sex
+
+```{r echo = FALSE, fig.align = 'center'}
+library(ggpubr)
+
+p9 <- ggplot(df, aes(x = age, y = drinking, color = drinking)) +
+  geom_point(position = "jitter") + 
+  scale_color_viridis(option = "plasma") + 
+  theme_minimal() +
+  geom_smooth(method = "lm", color = "black") +
+  stat_cor(method = "pearson", r.accuracy = 0.01, p.accuracy = 0.001, label.x.npc = 0.5) + 
+  facet_grid(.~sex, labeller = as_labeller(c("F" = "Female", "M" = "Male"))) + 
+  labs(title = "Age vs. Alcohol Consumption", 
+       x = "Age", y = "Alcohol Consumption Level") + 
+  scale_y_continuous(breaks = 1:5, labels = c("Very low", "Low", "Moderate", "High", "Very high")) + 
+  theme(axis.text.y = element_text(), 
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 14), 
+        strip.text = element_text(size = 14),
+        plot.title = element_text(size = 18, hjust = 0.5)) + 
+  guides(color = FALSE)
+
+p9
+```
+
+However, there appears to be a stark difference in female versus male drinking 
+habits. While the amount of alcohol females drink barely increases with age, 
+the amount of alcohol males drink increases much more noticeably. The correlation 
+coefficients for each of the graphs also reflect this, with $R=0.01$ for females 
+and $R=0.25$ for males. Also looking at Plot 2, most females are clustered around 
+the very low to moderate alcohol consumption levels, while males are evenly 
+distributed across all levels. 
+
+
+### Plot 3: Drinking Habits and Physical Health
+
+Link to Shiny App:  
+<https://kelscam.shinyapps.io/Project_BestPlot/> 
+
+```{r echo = FALSE, out.width="100%", fig.align='center'}
+include_graphics("BestPlota.png")
+```
+
+```{r echo = FALSE, out.width="100%", fig.align='center'}
+include_graphics("BestPlotb.png")
+```
+
+Plot 3 visualizes the relationship between alcohol consumption and health status. 
+The Shiny App includes the option to view the data all together or by sex. Looking at
+the data together, the highest number of students who reported very good health 
+reported low or very low alcohol consumption. When the data is grouped by sex, 
+the effect of alcohol consumption on health slightly changes. There is a higher 
+number of girls than boys who report very poor to moderate health as alcohol 
+consumption increases. The density or number of students is indicated by the 
+saturation of the heat map grid. Grouping by sex, the detrimental effects of drinking 
+on females compared to the relatively harmless effect on males is apparent, as 
+a larger number of males (indicated by the darker hue) still report moderate 
+health status despite moderate to high alcohol consumption. On the other hand, 
+there is a steep drop off in the health status of females even just between those
+who drink very low and low levels of alcohol. This plot relates to Plot 2, as it 
+shows that even though males drink more with age, they suffer less severe health 
+consequences from drinking than females do. 
+
+
+# Factors that Influence Students' Academic Success
+
+### Plot 4: Drinking Habits and Final Grades
+
+Link to Shiny App:
+<https://kelscam.shinyapps.io/ProjectApp1/>
+
+```{r echo = FALSE, out.width="100%", fig.align='center'}
+include_graphics("App1a.png")
+```
+
+```{r echo = FALSE, out.width="100%", fig.align='center'}
+include_graphics("App1b.png")
+```
+
+Plot 4 visualizes the relationship between students' weekday and weekend alcohol 
+consumption on final grade. The dropdown menu allows the user to switch between 
+weekday and weekend alcohol consumption. Looking at the ridge plot for weekday 
+alcohol consumption and final grades, the highest distribution of students 
+earning 80-100s are ones with very low drinking during the week. \newline
+Looking at the plot for weekend alcohol consumption, the ridges of students who 
+drink very low to moderate amounts of alcohol all have a high distribution of 
+students earning high final grades. Drinking on the weekend versus the weekday is 
+less detrimental to a student's final grade. This makes intuitive sense because the 
+week is much more academically demanding with classes, assignments, and exams.
+
+
+### Plot 5: Absences, Study Time, and Final Grade
+
+```{r echo = FALSE}
+library(plotly)
+
+study.df <- df %>%
+  mutate(studytime = case_when(
+    studytime == 1 ~ "<2 hours",
+    studytime == 2 ~ "2-5 hours",
+    studytime == 3 ~ "5-10 hours",
+    studytime == 4 ~ ">10 hours",
+    TRUE ~ as.character(studytime)
+  ))
+
+study.df$studytime <- factor(study.df$studytime, labels = c("<2 hours", "2-5 hours", "5-10 hours", ">10 hours"))
+```
+
+```{r echo = FALSE, fig.align = 'center'}
+p2colors <- viridisLite::viridis(4, option = "plasma")
+
+p2 <- plot_ly(study.df, x = ~absences, y = ~final.grade, color = ~studytime, colors = p2colors,
+               text = ~paste(studytime, "spent studying per week"), 
+               hoverinfo = "text", type="scatter", mode="markers", marker = list(opacity = 0.7, size=8)) %>% 
+  layout(title = list(text = "Total Absences vs. Final Grade", size = 20), 
+         xaxis = list(title = "Absences", titlefont = list(size = 16), tickfont = list(size = 14)),
+         yaxis = list(title = "Final Grade", titlefont = list(size = 16), tickfont = list(size = 14)),
+         showlegend = TRUE, 
+         legend = list(title = list(text = "Study Time per Week"))) 
+
+p2
+```
+
+Plot 5 visualizes students' total absences, their final grades, and the hours 
+they spent studying per week. The clustering of the point reveals a general trend 
+between total absences and final grade; students with less absences earned higher grades. 
+The majority of students with high grades and low absences spent over 5 hours 
+studying per week, compared to students with higher absences and lower grades who 
+spent less than 5 hours studying. However, absences appears to have a stronger 
+association with students' final grades than study time, as the students with 
+varying study times are scattered throughout the plot. This pattern is especially 
+evident in students who spent between 5 and 10 hours studying per week. Some had 
+low absences and high grades, others had high absences and low grades, and others 
+fell into neither of these categories. There are also a few students who spent 
+less than 2 hours studying per week, but they rarely were absent and achieved high 
+final grades. Overall, there is a stronger association between low absences and 
+higher final grades than hours spent studying per week.   
+
+
+
+### Plot 6: Physical Health and Final Grade
+
+```{r echo = FALSE}
+library(tidyverse)
+
+# Pre-processing 
+
+grades_df <- df %>% select(first.period.grade, second.period.grade, final.grade, health.status)
+grades_df <- gather(grades_df, period, grade, 1:3)
+grades_df$Period <- grades_df$period
+grades_df$Period <- factor(grades_df$Period, levels = c("first.period.grade", "second.period.grade", "final.grade"))
+
+grades_df <- grades_df %>%
+  mutate(Period = case_when(
+    Period == "first.period.grade" ~ "1st Semester",
+    Period == "second.period.grade" ~ "2nd Semester",
+    Period == "final.grade" ~ "Final",
+    TRUE ~ as.character(Period)
+  ))
+
+grades_df <- grades_df %>%
+  mutate(health.status = case_when(
+    health.status == 1 ~ "Very Good",
+    health.status == 2 ~ "Good",
+    health.status == 3 ~ "Moderate",
+    health.status == 4 ~ "Poor",
+    health.status == 5 ~ "Very Poor",
+    TRUE ~ as.character(health.status)
+  ))
+
+grades_df$health.status <- factor(grades_df$health.status, levels = c("Very Good", "Good", "Moderate", "Poor", "Very Poor"))
+```
+
+```{r echo = FALSE, fig.align = 'center'}
+p5colors <- c("blue4", "grey", "grey", "grey", "grey")
+
+p5 <- plot_ly(grades_df, x = ~factor(health.status), y = ~grade, type = "violin", frame = ~Period,
+             color = ~factor(health.status), colors = p5colors) %>% 
+  layout(
+    title = list(text = "Grade Distribution by Student's Health Condition over Semester", size = 20),
+            xaxis = list(title = "Health Status", titlefont = list(size = 16), tickfont = list(size = 14)),
+            yaxis = list(title = "Grade", range = c(0, 100), titlefont = list(size = 16), tickfont = list(size = 14), dtick = 10),
+            boxmode = "group", 
+            showlegend = FALSE) %>%
+  animation_opts(frame = 1000,  # Controls speed of transition; higher number = slower
+                 redraw = TRUE, # Redraws the plot in each frame
+                 easing = "linear") %>% # FIX THIS PART
+  
+  layout(
+   updatemenus = list( 
+     list(
+       type = "buttons", 
+       showactive = FALSE,
+       x = 0, 
+       y = -0.05, 
+       buttons = list(
+         
+        list(
+           label = "Pause", # Name of the label
+           method = "animate", # What do to when the button is clicked
+           args = list(NULL, list(frame = list(duration = 0,  # Stops immediately
+                                               redraw = TRUE), 
+                                  mode = "immediate"))
+         )
+       )
+     )
+   )
+ ) 
+    
+
+p5
+```
+
+Plot 6 visualizes the distribution of students' first semester, second semester, and final grades throughout the year by their health status. In the first semester, students reporting very good health earned an average grade in all their classes 5 points higher than students who reported good to very poor health. By the second semester, this trend becomes more apparent, with students reporting very good health earning a median grade 10 points higher than other students. This difference was also reflected in students' final grades. Health status seems to be an important factor in students achieving better grades, as there is a strong positive association between better health and higher grades. 
+
+### Plot 7: Free Time, Extracurricular Activites, and Final Grade 
+
+```{r echo = FALSE, fig.align = 'center'}
+p7 <- ggplot(df, aes(x=factor(freetime), y=final.grade)) + 
+  geom_boxplot(aes(fill=factor(freetime))) + 
+  theme_minimal() + 
+  scale_fill_viridis_d(option = "plasma") +
+  facet_grid(.~activities, labeller = as_labeller(c("0" = "No Extracurriculars", "1" = "Extracurriculars"))) + 
+  guides(fill = FALSE) + 
+  labs(title = "Final Grade Distribution by How Freetime is Spent", x = "Amount of Freetime after School", y = "Final Grade") + 
+  scale_x_discrete(breaks = 1:5, labels = c("A lot less", "Less", "Some", "More", "A lot more")) + 
+  theme(axis.text.x = element_text(angle = 35), 
+        plot.title = element_text(hjust = 0.5, size = 18), 
+        axis.title = element_text(size = 14),
+        strip.text = element_text(size = 14), 
+        axis.text = element_text(size = 10))
+
+
+p7
+```
+
+Plot 7 visualizes how students are spending their free time after school, and if 
+students with more free time are earning better grades. For students not involved 
+in extracurricular activities after school, the grade distributions for students 
+with less free time was higher compared to those of students with more free time. 
+Students with less free time achieved the highest median grade compared to 
+students with a lot less, some, more, and a lot less free time. \newline 
+Students who participate in extracurriculars reveal similar trends. Comparing 
+the overall distributions between students who do extracurriculars versus those 
+who don't, students who do extracurriculars achieved higher median and third 
+percentile grades except for students with a lot less free time. Generally, 
+students who participate in extracurriculars achieved higher final grades.
+
+
+
+# Effect of Family and Upbringing on Student Outcomes  
+
+### Plot 8: Higher Education and Parents' Education Levels
+
+Link to Shiny App:  
+<https://kelscam.shinyapps.io/ProjectApp2/>
+
+```{r echo = FALSE, out.width="100%", fig.align='center'}
+include_graphics("App2a.png")
+```
+
+```{r echo = FALSE, out.width="100%", fig.align='center'}
+include_graphics("App2b.png")
+```
+
+Plot 8 visualizes students interest in attending college by their mother's and 
+father's highest education levels. Looking at the graph of mother's highest 
+education level, the number of students who want to go to college relative to 
+those who don't is highest for students with mothers who attained university or
+higher degrees. The trend is the same for father's highest education level, with 
+both graphs showing a decrease in the relative number of student's who want 
+to go to college as parent's highest level of education becomes more basic, ranging from 
+high school to no education at all. Though not a perfect indicator, parents' highest
+education levels serve as a socioeconomic variable for students because it provides context for what kind of advantages or disadvantages they faced growing up (e.g. whether they will be a first-generation college student). Students are more likely to pursue a college education if their parents did. Perhaps, this may motivate them to earn higher grades, take on more extracurricular activities, and drink less.  
+
+
+### Plot 9: Family and Romantic Relationships
+
+```{r echo = FALSE}
+library(ggalluvial)
+
+alluv_df <- df %>% 
+  group_by(romantic, famrel, health.status) %>% 
+  summarize(freq = n())
+
+alluv_df$romantic <- factor(alluv_df$romantic, labels = c("No", "Yes"))
+alluv_df$famrel <- factor(alluv_df$famrel, labels = c("Very poor", "Poor", "Decent", "Good", "Very Good"))
+```
+
+
+```{r echo = FALSE, fig.width = 8, fig.align = 'center'}
+p8 <- ggplot(alluv_df, 
+       aes(y = freq, axis2 = factor(romantic), axis1 = factor(famrel))) + 
+         geom_alluvium(aes(fill = factor(famrel)), width = 0, knot.pos = 1/4, reverse = FALSE) + 
+  guides(fill = "none") +
+  geom_stratum(width = 1/8, reverse = FALSE) +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum)), reverse = FALSE, size = 3.25) +
+  scale_x_continuous(breaks = 1:2, labels = c("Quality of Family Relationships", "Romantic Partner")) + 
+  labs(title = "Satisfaction with Family and Romantic Relationships", y = "Frequency") + 
+  scale_fill_viridis_d(option = "plasma") +
+  theme_minimal() + 
+  theme(plot.title = element_text(size = 16, hjust = 0.5), 
+        axis.title.y = element_text(size = 14), 
+        axis.text.x = element_text(size = 13), 
+        axis.text.y = element_text(size = 10)) 
+
+p8 
+```
+
+Plot 9 visualizes students' responses to how they rate the quality of their family relationships and whether they have a romantic partner or not. Out of the students who reported having very good 
+or good relationships with their families, about 1 in 3 of them had a romantic 
+partner. For students with decent relationships with their families, this dropped 
+to 1 in 4 students, and for students with poor and very poor family relationships, the 
+number with romantic partners was even lower. This plot doesn't make it clear 
+whether good family relationships make it more likely for students to find 
+romantic partners, but it does show that there is a clear link between the two. 
+Relationships and connection are vital to the well-being and success of any person, so it is interesting to see if there is a link between quality of family relationships and 
+having a romantic partner in high school students.  
+
+
+
+
+
